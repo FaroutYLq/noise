@@ -50,3 +50,46 @@ def dBm_to_temp(power_dBm: float, bandwidth_Hz: float) -> float:
     """
     power_W = 1e-3 * 10.0 ** (power_dBm / 10.0)
     return power_W / (K_B * bandwidth_Hz)
+
+
+T_0 = 290.0  # IEEE standard reference temperature [K]
+
+
+def noise_figure_to_temp(nf_dB: float) -> float:
+    """Convert noise figure in dB to equivalent noise temperature.
+
+    Uses the IEEE standard reference temperature T_0 = 290 K:
+
+        T_n = T_0 × (10^(NF/10) - 1)
+
+    Parameters
+    ----------
+    nf_dB : float
+        Noise figure [dB].
+
+    Returns
+    -------
+    float
+        Equivalent noise temperature [K].
+    """
+    return T_0 * (10.0 ** (nf_dB / 10.0) - 1.0)
+
+
+def temp_to_noise_figure(noise_temp_K: float) -> float:
+    """Convert equivalent noise temperature to noise figure in dB.
+
+    Inverse of ``noise_figure_to_temp``:
+
+        NF = 10 × log10(1 + T_n / T_0)
+
+    Parameters
+    ----------
+    noise_temp_K : float
+        Equivalent noise temperature [K].
+
+    Returns
+    -------
+    float
+        Noise figure [dB].
+    """
+    return 10.0 * math.log10(1.0 + noise_temp_K / T_0)
