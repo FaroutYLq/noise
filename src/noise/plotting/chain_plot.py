@@ -17,6 +17,8 @@ from typing import TYPE_CHECKING
 import matplotlib.pyplot as plt
 import numpy as np
 
+from noise.constants import K_B
+
 if TYPE_CHECKING:
     from matplotlib.axes import Axes
     from matplotlib.figure import Figure
@@ -25,10 +27,16 @@ if TYPE_CHECKING:
     from noise.johnson import ChainAnalysis
 
 
-# Distinct colors for noise sources
+# Distinct colors for noise sources (enough for large chains)
 _COLORS = [
     "#1f77b4", "#ff7f0e", "#2ca02c", "#d62728",
     "#9467bd", "#8c564b", "#e377c2", "#7f7f7f",
+    "#bcbd22", "#17becf", "#aec7e8", "#ffbb78",
+    "#98df8a", "#ff9896", "#c5b0d5", "#c49c94",
+    "#f7b6d2", "#c7c7c7", "#dbdb8d", "#9edae5",
+    "#393b79", "#637939", "#8c6d31", "#843c39",
+    "#7b4173", "#5254a3", "#6b6ecf", "#b5cf6b",
+    "#e7969c", "#bd9e39", "#ad494a", "#a55194",
 ]
 
 
@@ -37,6 +45,7 @@ def plot_chain_analysis(
     analysis: "ChainAnalysis",
     *,
     show_back_referred: bool = True,
+    bandwidth_Hz: float = 1.0,
     ax: "Axes | None" = None,
     figsize: tuple[float, float] = (14, 7),
 ) -> "Figure":
@@ -50,6 +59,8 @@ def plot_chain_analysis(
         Result from ``analyze_chain()``.
     show_back_referred : bool
         If True, show faded bars for back-referred noise at each stage.
+    bandwidth_Hz : float
+        Measurement bandwidth [Hz] for the dBm secondary axis.
     ax : Axes, optional
         Matplotlib axes to plot on. If None, a new figure is created.
     figsize : tuple
@@ -151,15 +162,15 @@ def plot_chain_analysis(
         xlabels.append(comp.name)
     ax.set_xticks(stage_positions)
     ax.set_xticklabels(xlabels, rotation=30, ha="right")
+    ax.tick_params(axis="x", which="both", length=0)
 
-    # Annotations below x-axis
-    for i, comp in enumerate(components):
-        ax.annotate(
-            f"{comp.gain_dB:+.0f} dB, {comp.temperature_K} K",
-            xy=(i + 1, 0), xycoords=("data", "axes fraction"),
-            xytext=(0, -35), textcoords="offset points",
-            ha="center", va="top", fontsize=7, color="gray",
-        )
+    # Secondary y-axis: dBm (linear scale, since dBm is already logarithmic)
+    ax_right = ax.twinx()
+    y_lo, y_hi = ax.get_ylim()
+    dbm_lo = 10.0 * np.log10(K_B * y_lo * bandwidth_Hz / 1e-3)
+    dbm_hi = 10.0 * np.log10(K_B * y_hi * bandwidth_Hz / 1e-3)
+    ax_right.set_ylim(dbm_lo, dbm_hi)
+    ax_right.set_ylabel(f"Noise power [dBm] (BW = {bandwidth_Hz:.0f} Hz)")
 
     ax.legend(loc="upper left", fontsize=8)
     ax.grid(axis="y", alpha=0.3)
